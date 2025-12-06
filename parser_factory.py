@@ -1,5 +1,6 @@
 import os
 import importlib
+import sys
 from urllib.parse import urlparse
 
 
@@ -12,6 +13,21 @@ class ParserFactory:
     _parsers = {}
     
     @classmethod
+    def _get_parsers_dir(cls):
+        """
+        获取parsers目录路径，兼容PyInstaller打包环境
+        """
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的exe环境
+            bundle_dir = os.path.dirname(sys.executable)
+            parsers_dir = os.path.join(bundle_dir, 'parsers')
+        else:
+            # 开发环境
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            parsers_dir = os.path.join(current_dir, 'parsers')
+        return parsers_dir
+    
+    @classmethod
     def _load_parsers(cls):
         """
         自动加载并注册所有解析器
@@ -20,8 +36,11 @@ class ParserFactory:
             return
             
         # 获取parsers目录路径
-        parsers_dir = os.path.join(os.path.dirname(__file__), 'parsers')
+        parsers_dir = cls._get_parsers_dir()
+        print(f"查找解析器目录: {parsers_dir}")  # 调试信息
+        
         if not os.path.exists(parsers_dir):
+            print(f"警告: 找不到parsers目录: {parsers_dir}")
             return
             
         # 遍历parsers目录下的所有解析器文件
@@ -30,7 +49,17 @@ class ParserFactory:
                 module_name = filename[:-3]  # 移除.py后缀
                 try:
                     # 动态导入模块
-                    module = importlib.import_module(f'parsers.{module_name}')
+                    if getattr(sys, 'frozen', False):
+                        # 打包环境
+                        spec = importlib.util.spec_from_file_location(
+                            module_name, 
+                            os.path.join(parsers_dir, filename)
+                        )
+                        module = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(module)
+                    else:
+                        # 开发环境
+                        module = importlib.import_module(f'parsers.{module_name}')
                     
                     # 获取类名（假设类名是文件名的驼峰命名，去掉_parser后缀）
                     class_name = ''.join(word.capitalize() for word in module_name.split('_')[:-1]) + 'Parser'
@@ -41,6 +70,7 @@ class ParserFactory:
                     
                     # 注册解析器
                     cls.register_parser(parser_instance)
+                    print(f"成功加载解析器: {class_name}")  # 调试信息
                 except (ImportError, AttributeError) as e:
                     print(f"警告: 无法加载解析器 {module_name}: {e}")
     
