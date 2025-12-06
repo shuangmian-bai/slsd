@@ -19,17 +19,23 @@ pip install -r requirements.txt
 
 ### 开发环境运行
 
+有两种方式可以运行程序：
+
+1. 命令行版本:
 ```bash
-python main.py
+python cli_main.py
+```
+
+2. 图形界面版本:
+```bash
+python ui_main.py
 ```
 
 按提示输入搜索关键词和线程数即可开始检索。
 
 ### 打包为exe
 
-```bash
-python build_exe.py
-```
+目前项目尚未提供新的打包脚本，后续会添加用于将CLI和GUI版本分别打包为独立exe文件的功能。
 
 打包完成后，可在dist目录找到可执行文件。
 
@@ -127,15 +133,17 @@ python manage.py delete_parser news
 
 ```
 .
-├── main.py              # 主程序入口
+├── cli_main.py          # 命令行版本主程序
+├── ui_main.py           # 图形界面版本主程序
+├── Gui.ui               # 图形界面设计文件
 ├── get_data.py          # 数据获取模块
 ├── parser_factory.py    # 解析器工厂
 ├── parsers/             # 各网站解析器
 │   ├── base_parser.py   # 解析器基类
 │   ├── hnslsdxy_parser.py  # 湖南水利水电职院解析器
 │   └── voc_parser.py    # m.voc.com.cn解析器
+├── manage.py            # 解析器管理工具
 ├── requirements.txt     # 项目依赖
-├── build_exe.py         # 打包脚本
 └── README.md            # 说明文档
 ```
 
