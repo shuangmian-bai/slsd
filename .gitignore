@@ -153,12 +153,14 @@ cython_debug/
 # PyCharm
 .idea/
 
-# Icon files
-icon/
-
 # Data and image directories
 data/
 img/
+
+# Icon files (except project icons)
+# icon/ - project icons should be committed
+icon/*
+!icon/project-icon.png
 
 # OS generated files
 .DS_Store
