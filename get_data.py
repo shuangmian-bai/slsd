@@ -172,8 +172,13 @@ def get_links(search_key):
             link  = item['title'].split('href=')[2]
             link  = link.split("'")[1]
             if link[0:4] == 'http':
-                # 收集外部链接而不是立即打印
-                external_links.append(link)
+                # 检查该链接是否属于我们已注册解析器支持的域名
+                if ParserFactory.is_registered_domain(link):
+                    # 如果是已注册的域名，则将其作为内部链接处理
+                    links.append(link)
+                else:
+                    # 否则将其作为真正的外部链接收集
+                    external_links.append(link)
                 continue
             link = 'https://www.hnslsdxy.com/page/' +  link
             links.append(link)
