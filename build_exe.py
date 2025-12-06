@@ -108,10 +108,9 @@ def main():
     # 安装PyInstaller
     install_pyinstaller()
     
-    # 询问是否清理之前的构建
-    choice = input("是否清理之前的构建文件? (y/n, 默认为y): ").strip().lower()
-    if choice in ["", "y", "yes"]:
-        clean_build_dirs()
+    # 自动清理之前的构建
+    print("自动清理之前的构建文件...")
+    clean_build_dirs()
     
     # 构建可执行文件
     if build_executable():
