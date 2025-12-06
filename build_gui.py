@@ -36,10 +36,10 @@ def build_executable():
         print("警告: 找不到图标文件，将不使用图标")
         icon_path = None
     
-    # 构建命令 - 多文件模式，无控制台窗口
+    # 构建命令 - 单文件模式，无控制台窗口
     cmd = [
         "pyinstaller",
-        "--onedir",  # 多文件模式
+        "--onefile",  # 单文件模式
         "--name", "湖南水利水电信息检索工具",  # 可执行文件名
         "--noconsole",  # 无控制台窗口
         "--windowed",   # 窗口化应用
@@ -55,9 +55,10 @@ def build_executable():
         "--distpath", "./dist",  # 输出目录
         "--workpath", "./build",  # 构建目录
         "--specpath", "./build",  # spec文件目录
-        # 添加数据文件（将parsers目录和Gui.ui文件打包进exe）
+        # 添加数据文件（将parsers目录、Gui.ui文件和icon目录打包进exe）
         "--add-data", f"{os.path.join(current_dir, 'parsers')}{os.pathsep}parsers",
         "--add-data", f"{os.path.join(current_dir, 'Gui.ui')}{os.pathsep}.",
+        "--add-data", f"{os.path.join(current_dir, 'icon')}{os.pathsep}icon",
         # 添加隐藏导入以解决打包后导入问题
         "--hidden-import", "parsers.base_parser",
         "--hidden-import", "parsers.hnslsdxy_parser",
@@ -120,7 +121,7 @@ def main():
     # 构建可执行文件
     if build_executable():
         print("\n打包完成!")
-        print("可执行文件位置: dist/湖南水利水电信息检索工具/")
+        print("可执行文件位置: dist/湖南水利水电信息检索工具.exe")
     else:
         print("\n打包失败!")
 

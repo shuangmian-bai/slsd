@@ -36,10 +36,10 @@ def build_executable():
         print("警告: 找不到图标文件，将不使用图标")
         icon_path = None
     
-    # 构建命令 - 多文件模式，有控制台窗口
+    # 构建命令 - 单文件模式，有控制台窗口
     cmd = [
         "pyinstaller",
-        "--onedir",  # 多文件模式
+        "--onefile",  # 单文件模式
         "--name", "湖南水利水电信息检索工具_CLI",  # 可执行文件名
     ]
     
@@ -117,7 +117,7 @@ def main():
     # 构建可执行文件
     if build_executable():
         print("\n打包完成!")
-        print("可执行文件位置: dist/湖南水利水电信息检索工具_CLI/")
+        print("可执行文件位置: dist/湖南水利水电信息检索工具_CLI.exe")
     else:
         print("\n打包失败!")
 

@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMessageBox, QFileDialog, QListWidgetItem
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
+from PyQt6.QtGui import QIcon
 from PyQt6 import uic
 
 # 添加项目根目录到Python路径
@@ -19,6 +20,17 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from get_data import get_links, process_article
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# 获取资源文件的函数，用于处理PyInstaller打包后的资源路径
+def resource_path(relative_path):
+    """获取资源文件的绝对路径"""
+    try:
+        # PyInstaller创建临时文件夹，并将路径存储在_MEIPASS中
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
 
 
 class WorkerSignals(QObject):
@@ -120,6 +132,11 @@ class MainWindow(QMainWindow):
         # 加载UI文件
         ui_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Gui.ui')
         self.ui = uic.loadUi(ui_path, self)
+        
+        # 设置窗口图标
+        icon_path = resource_path(os.path.join("icon", "shuangmian.ico"))
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         
         # 连接信号和槽
         self.setup_connections()
