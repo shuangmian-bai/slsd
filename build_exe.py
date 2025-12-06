@@ -29,12 +29,25 @@ def build_executable():
         print(f"错误: 找不到主脚本 {main_script}")
         return False
     
+    # 检查图标文件是否存在
+    icon_path = "./icon/shuangmian.ico"
+    full_icon_path = os.path.join(current_dir, "icon", "shuangmian.ico")
+    if not os.path.exists(full_icon_path):
+        print("警告: 找不到图标文件，将不使用图标")
+        icon_path = None
+    
     # 构建命令 - 添加了数据文件包含选项
     cmd = [
         "pyinstaller",
         "--onefile",  # 单文件模式
         "--name", "湖南水利水电信息检索工具",  # 可执行文件名
-        "--icon", "./icon/shuangmian.ico",  # 不使用图标（如果需要图标可以指定ico文件路径）
+    ]
+    
+    # 只有图标文件存在时才添加图标参数
+    if icon_path and os.path.exists(full_icon_path):
+        cmd.extend(["--icon", full_icon_path])  # 使用完整路径而不是相对路径
+    
+    cmd.extend([
         "--clean",  # 清理临时文件
         "--noconfirm",  # 不询问确认
         "--distpath", "./dist",  # 输出目录
@@ -47,14 +60,21 @@ def build_executable():
         "--hidden-import", "parsers.hnslsdxy_parser",
         "--hidden-import", "parsers.voc_parser",
         main_script
-    ]
+    ])
     
     print("开始构建可执行文件...")
     print(f"命令: {' '.join(cmd)}")
     
     try:
-        # 执行构建命令
-        result = subprocess.run(cmd, cwd=current_dir, capture_output=True, text=True)
+        # 执行构建命令，设置编码为utf-8以避免Windows上的编码问题
+        result = subprocess.run(
+            cmd, 
+            cwd=current_dir, 
+            capture_output=True, 
+            text=True, 
+            encoding='utf-8',
+            errors='ignore'
+        )
         
         if result.returncode == 0:
             print("构建成功!")
