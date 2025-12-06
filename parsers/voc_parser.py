@@ -5,7 +5,7 @@ from .base_parser import BaseParser
 
 class VocParser(BaseParser):
     """
-    voc 网站解析器
+    m.voc.com.cn 网站解析器
     """
     
     def __init__(self, headers=None):
@@ -15,7 +15,7 @@ class VocParser(BaseParser):
     
     def parse(self, url):
         """
-        解析 voc 网站的页面
+        解析 m.voc.com.cn 网站的页面
         
         Args:
             url (str): 要解析的页面URL
@@ -24,17 +24,15 @@ class VocParser(BaseParser):
             dict: 包含标题、日期、正文等内容的字典
         """
         req = requests.get(url, headers=self.headers)
+        req.encoding = 'utf-8'
         soup = BeautifulSoup(req.text, 'html.parser')
 
-        # TODO: 根据实际网站结构调整选择器
-        # 标题 #main_title
-        # 时间 #main_info
-
-        title = soup.select('#main_title')[0].text if soup.select('h1') else "未知标题"
-        date = soup.select('#main_info')[0].text if soup.select('.date') else ""
+        # 根据实际网站结构调整选择器
+        title = soup.select('#main_title')[0].text if soup.select('#main_title') else "未知标题"
+        date = soup.select('#main_info')[0].text if soup.select('#main_info') else ""
         
-        # TODO: 根据实际网站结构调整内容选择器
-        content_div = soup.select('.content')[0] if soup.select('.content') else soup
+        # 根据实际网站结构调整内容选择器
+        content_div = soup.select('#content')[0] if soup.select('#content') else soup
         
         # 提取文本内容
         body = content_div.get_text()
@@ -55,8 +53,3 @@ class VocParser(BaseParser):
             list: 支持的域名列表
         """
         return ['m.voc.com.cn']
-
-
-if __name__ == "__main__":
-    parser = VocParser()
-    # TODO: 添加测试代码
