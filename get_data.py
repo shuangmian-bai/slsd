@@ -8,8 +8,10 @@ import time
 import os
 from bs4 import BeautifulSoup
 from docx import Document
+from docx.shared import Inches
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 headers = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -37,6 +39,11 @@ data_dir = "data"
 if not os.path.exists(data_dir):
     os.makedirs(data_dir)
 
+# 确保图片缓存目录存在
+img_dir = "img"
+if not os.path.exists(img_dir):
+    os.makedirs(img_dir)
+
 # 解析一页新闻
 def parse_page(url):
     req = requests.get(url, headers=headers)
@@ -46,12 +53,16 @@ def parse_page(url):
     title = soup.select('#Labtitle')[0].text
     date = soup.select('#Labinfo')[0].text
     # 真文 #content_div
-    body = soup.select('.content_div')[0].text
+    content_div = soup.select('.content_div')[0]
+    
+    # 提取文本内容
+    body = content_div.get_text()
 
     return {
         'title': title,
         'date': date,
-        'body': body
+        'body': body,
+        'content_div': content_div
     }
 
 # 将文章保存为Word文档
@@ -73,8 +84,67 @@ def save_to_word(article_data, filename):
     doc.add_paragraph(article_data['date'])
     
     # 添加正文内容
-    doc.add_paragraph(article_data['body'])
+    # 解析内容中的文本和图片
+    content_div = article_data['content_div']
     
+    # 遍历内容中的所有元素
+    paragraph = None
+    for element in content_div.descendants:
+        if element.name == 'p':
+            # 处理段落
+            paragraph = doc.add_paragraph(element.get_text().strip())
+        elif element.name == 'div':
+            # 处理div中的内容
+            div_text = element.get_text().strip()
+            if div_text:
+                paragraph = doc.add_paragraph(div_text)
+        elif element.name == 'img':
+            # 处理图片
+            img_src = element.get('src')
+            if img_src:
+                try:
+                    # 处理相对路径和绝对路径
+                    if img_src.startswith('/'):
+                        img_url = 'https://www.hnslsdxy.com' + img_src
+                    elif not img_src.startswith('http'):
+                        # 相对路径处理
+                        base_url = 'https://www.hnslsdxy.com/page/'
+                        img_url = base_url + img_src
+                    else:
+                        img_url = img_src
+                        
+                    # 下载图片
+                    img_response = requests.get(img_url, headers=headers, timeout=30)
+                    if img_response.status_code == 200:
+                        # 保存图片到img文件夹
+                        img_filename = os.path.basename(img_url.split('?')[0])
+                        if not img_filename:
+                            img_filename = 'image.jpg'
+                            
+                        img_path = os.path.join(img_dir, img_filename)
+                        counter = 1
+                        original_img_path = img_path
+                        while os.path.exists(img_path):
+                            name, ext = os.path.splitext(original_img_path)
+                            img_path = f"{name}_{counter}{ext}"
+                            counter += 1
+                            
+                        with open(img_path, 'wb') as f:
+                            f.write(img_response.content)
+                        
+                        # 添加图片到文档，保持原始尺寸
+                        doc.add_picture(img_path)
+                    else:
+                        # 图片下载失败时添加提示文字
+                        doc.add_paragraph(f"[图片加载失败: {img_url}]")
+                except Exception as e:
+                    # 出现异常时添加提示文字
+                    doc.add_paragraph(f"[图片处理失败: {str(e)}]")
+        elif element.name is None and element.strip() and paragraph:
+            # 处理纯文本节点（可能是段落内的文本）
+            if not paragraph.text:  # 如果段落为空，则添加文本
+                paragraph.text = element.strip()
+                
     # 保存文档
     doc.save(full_path)
     return True, full_path
