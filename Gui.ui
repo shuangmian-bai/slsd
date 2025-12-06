@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>900</width>
-    <height>700</height>
+    <width>1000</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,6 +16,180 @@
   <property name="windowIcon">
    <iconset>
     <normaloff>icon/shuangmian.ico</normaloff>icon/shuangmian.ico</iconset>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QMainWindow {
+	background-color: #f0f0f0;
+}
+
+QGroupBox {
+    border: 2px solid #FF8C00;
+    border-radius: 8px;
+    margin-top: 1ex;
+	font-size: 14px;
+	font-weight: bold;
+	color: #333;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top center;
+    padding: 0 10px;
+	color: #FF8C00;
+}
+
+QLabel {
+	font-size: 12px;
+	color: #333;
+}
+
+QLineEdit {
+    padding: 8px;
+    border: 2px solid #FFA500;
+    border-radius: 6px;
+    font-size: 12px;
+	background-color: white;
+}
+
+QLineEdit:focus {
+    border-color: #FF8C00;
+}
+
+QSpinBox {
+    padding: 6px;
+    border: 2px solid #FFA500;
+    border-radius: 6px;
+    font-size: 12px;
+    min-width: 80px;
+}
+
+QPushButton {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #FF8C00, stop: 1 #FFA500);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+	min-width: 80px;
+}
+
+QPushButton:hover {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #FFA500, stop: 1 #FF8C00);
+}
+
+QPushButton:pressed {
+    background-color: #FF8C00;
+}
+
+QPushButton#exitButton {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #888888, stop: 1 #666666);
+}
+
+QPushButton#exitButton:hover {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #999999, stop: 1 #777777);
+}
+
+QProgressBar {
+    border: 2px solid #FFA500;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: bold;
+    color: #333;
+	background-color: #fff;
+}
+
+QProgressBar::chunk {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0,
+                                      stop: 0 #FF8C00, stop: 1 #FFA500);
+    border-radius: 4px;
+}
+
+QTabWidget::pane {
+    border: 2px solid #FFA500;
+    border-radius: 6px;
+	top: -1px;
+}
+
+QTabBar::tab {
+    background-color: #f0f0f0;
+    border: 2px solid #FFA500;
+    border-bottom: none;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    padding: 6px 12px;
+    margin-right: 2px;
+	font-size: 12px;
+	font-weight: bold;
+	color: #333;
+}
+
+QTabBar::tab:selected {
+    background-color: #FFA500;
+    color: white;
+	border-color: #FF8C00;
+}
+
+QTabBar::tab:!selected {
+    margin-top: 2px;
+}
+
+QListWidget {
+    border: 2px solid #FFA500;
+    border-radius: 6px;
+    background-color: white;
+    alternate-background-color: #f9f9f9;
+	font-size: 12px;
+}
+
+QMenuBar {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #FF8C00, stop: 1 #FFA500);
+    color: white;
+	font-size: 12px;
+}
+
+QMenuBar::item {
+    background: transparent;
+	padding: 6px 10px;
+	spacing: 3px;
+}
+
+QMenuBar::item:selected {
+    background-color: rgba(255, 255, 255, 50);
+}
+
+QMenuBar::item:pressed {
+    background-color: rgba(255, 255, 255, 30);
+}
+
+QMenu {
+    background-color: white;
+    border: 2px solid #FF8C00;
+    border-radius: 4px;
+	font-size: 12px;
+}
+
+QMenu::item {
+    padding: 6px 20px;
+	color: #333;
+}
+
+QMenu::item:selected {
+    background-color: #FFA500;
+    color: white;
+}
+
+QStatusBar {
+    background-color: #f0f0f0;
+    border-top: 1px solid #ddd;
+	font-size: 12px;
+	color: #333;
+}</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -98,13 +272,6 @@
          </property>
         </widget>
        </item>
-       <item>
-        <widget class="QLabel" name="statusLabel">
-         <property name="text">
-          <string>准备就绪</string>
-         </property>
-        </widget>
-       </item>
       </layout>
      </widget>
     </item>
@@ -125,7 +292,11 @@
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <widget class="QListWidget" name="successListWidget"/>
+            <widget class="QListWidget" name="successListWidget">
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -135,7 +306,11 @@
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
-            <widget class="QListWidget" name="failedListWidget"/>
+            <widget class="QListWidget" name="failedListWidget">
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -145,7 +320,11 @@
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_6">
            <item>
-            <widget class="QListWidget" name="externalListWidget"/>
+            <widget class="QListWidget" name="externalListWidget">
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -192,8 +371,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>900</width>
-     <height>21</height>
+     <width>1000</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

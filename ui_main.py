@@ -159,6 +159,9 @@ class MainWindow(QMainWindow):
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionAbout.triggered.connect(self.show_about)
         
+        # 连接回车键事件到搜索功能
+        self.ui.keywordLineEdit.returnPressed.connect(self.start_search)
+        
         # 连接列表双击事件
         self.ui.successListWidget.itemDoubleClicked.connect(self.open_success_item)
         self.ui.failedListWidget.itemDoubleClicked.connect(self.open_failed_item)
@@ -173,7 +176,9 @@ class MainWindow(QMainWindow):
         # 设置进度条初始状态
         self.ui.progressBar.setValue(0)
         self.ui.progressBar.setFormat("准备就绪")
-        self.ui.statusLabel.setText("准备就绪")
+        
+        # 设置窗口大小
+        self.resize(1000, 800)
         
     def start_search(self):
         """开始搜索"""
@@ -186,7 +191,7 @@ class MainWindow(QMainWindow):
         
         # 禁用开始按钮，防止重复点击
         self.ui.startButton.setEnabled(False)
-        self.ui.statusLabel.setText("正在获取链接...")
+        self.ui.progressBar.setFormat("正在获取链接...")
         
         # 创建并启动工作线程
         self.worker = SearchWorker(search_key, max_threads)
@@ -203,13 +208,12 @@ class MainWindow(QMainWindow):
             progress = int((current / total) * 100)
             self.ui.progressBar.setValue(progress)
             self.ui.progressBar.setFormat(f"{progress}% ({current}/{total})")
-        self.ui.statusLabel.setText(message)
         
     def search_finished(self, success_list, failed_list, external_links):
         """搜索完成"""
         # 更新界面
         self.ui.startButton.setEnabled(True)
-        self.ui.statusLabel.setText("搜索完成")
+        self.ui.progressBar.setFormat("搜索完成")
         
         # 填充结果列表
         self.populate_results(success_list, failed_list, external_links)
@@ -224,7 +228,7 @@ class MainWindow(QMainWindow):
     def search_error(self, error_msg):
         """搜索出错"""
         self.ui.startButton.setEnabled(True)
-        self.ui.statusLabel.setText("搜索出错")
+        self.ui.progressBar.setFormat("搜索出错")
         QMessageBox.critical(self, "错误", f"搜索过程中出现错误:\n{error_msg}")
         
     def add_result_item(self, item, item_type):
