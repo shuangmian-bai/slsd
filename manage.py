@@ -30,10 +30,29 @@ def create_parser(parser_name, domains):
     # 解析器模板
     template = f'''import requests
 from bs4 import BeautifulSoup
-from .base_parser import BaseParser
+# 修改导入方式，避免相对导入问题
+import sys
+import os
+
+# 添加当前目录到sys.path，确保可以导入base_parser
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+try:
+    from parsers.base_parser import BaseParser
+except ImportError:
+    # 在PyInstaller打包环境中尝试不同的导入方式
+    try:
+        from base_parser import BaseParser
+    except ImportError:
+        # 最后尝试直接从父模块导入
+        BaseParser = None
+        print("警告: 无法导入BaseParser")
 
 
-class {parser_name.capitalize()}Parser(BaseParser):
+class {parser_name.capitalize()}Parser(BaseParser if BaseParser else object):
     """
     {parser_name} 网站解析器
     """
@@ -84,6 +103,7 @@ class {parser_name.capitalize()}Parser(BaseParser):
         return {domains}
 
 
+# 测试代码
 if __name__ == "__main__":
     parser = {parser_name.capitalize()}Parser()
     # TODO: 添加测试代码
@@ -94,13 +114,7 @@ if __name__ == "__main__":
         with open(parser_file, 'w', encoding='utf-8') as f:
             f.write(template)
         print(f"成功创建解析器: {parser_file}")
-        
-        # 提示用户需要注册解析器
-        print(f"请记得在 parser_factory.py 中注册新的解析器:")
-        print(f"1. 在文件开头添加导入: from parsers.{parser_name.lower()}_parser import {parser_name.capitalize()}Parser")
-        print(f"2. 在文件末尾添加注册代码:")
-        print(f"   _parser = {parser_name.capitalize()}Parser()")
-        print(f"   ParserFactory.register_parser(_parser)")
+        print(f"解析器已自动注册，可以直接使用")
         return True
     except Exception as e:
         print(f"创建解析器失败: {e}")
@@ -148,7 +162,8 @@ def list_parsers():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="网络爬虫管理工具")
+    parser = argparse.ArgumentParser(description="网络爬虫解析器管理工具", 
+                                   epilog="解析器会自动注册，创建后无需额外配置即可使用")
     subparsers = parser.add_subparsers(dest='command', help='可用命令')
     
     # 创建解析器命令
