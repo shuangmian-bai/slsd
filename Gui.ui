@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>800</height>
+    <width>1100</width>
+    <height>850</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,119 +19,128 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QMainWindow {
-	background-color: #f0f0f0;
+	background-color: #f8f9fa;
 }
 
 QGroupBox {
-    border: 2px solid #FF8C00;
-    border-radius: 8px;
-    margin-top: 1ex;
-	font-size: 14px;
-	font-weight: bold;
-	color: #333;
+    border: 1px solid #e1e5eb;
+    border-radius: 12px;
+    margin-top: 1.5ex;
+    padding-top: 15px;
+    background-color: white;
+    font-weight: 500;
 }
 
 QGroupBox::title {
     subcontrol-origin: margin;
-    subcontrol-position: top center;
-    padding: 0 10px;
-	color: #FF8C00;
+    subcontrol-position: top left;
+    padding: 5px 15px;
+    color: #2d3748;
+    font-size: 15px;
 }
 
 QLabel {
-	font-size: 12px;
-	color: #333;
+    font-size: 13px;
+    color: #4a5568;
 }
 
 QLineEdit {
-    padding: 8px;
-    border: 2px solid #FFA500;
-    border-radius: 6px;
-    font-size: 12px;
-	background-color: white;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    background-color: white;
 }
 
 QLineEdit:focus {
-    border-color: #FF8C00;
+    border-color: #63b3ed;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.2);
 }
 
 QSpinBox {
-    padding: 6px;
-    border: 2px solid #FFA500;
-    border-radius: 6px;
-    font-size: 12px;
-    min-width: 80px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    background-color: white;
+    min-width: 90px;
+}
+
+QSpinBox:focus {
+    border-color: #63b3ed;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.2);
 }
 
 QPushButton {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #FF8C00, stop: 1 #FFA500);
+    background-color: #4299e1;
     border: none;
     color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: bold;
-	min-width: 80px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 90px;
 }
 
 QPushButton:hover {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #FFA500, stop: 1 #FF8C00);
+    background-color: #3182ce;
 }
 
 QPushButton:pressed {
-    background-color: #FF8C00;
+    background-color: #2b6cb0;
 }
 
 QPushButton#exitButton {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #888888, stop: 1 #666666);
+    background-color: #e2e8f0;
+    color: #4a5568;
 }
 
 QPushButton#exitButton:hover {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #999999, stop: 1 #777777);
+    background-color: #cbd5e0;
 }
 
 QProgressBar {
-    border: 2px solid #FFA500;
-    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     text-align: center;
-    font-weight: bold;
-    color: #333;
-	background-color: #fff;
+    font-weight: 500;
+    color: #4a5568;
+    background-color: white;
+    height: 24px;
 }
 
 QProgressBar::chunk {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0,
-                                      stop: 0 #FF8C00, stop: 1 #FFA500);
-    border-radius: 4px;
+    background-color: #4299e1;
+    border-radius: 7px;
 }
 
 QTabWidget::pane {
-    border: 2px solid #FFA500;
-    border-radius: 6px;
-	top: -1px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    top: -1px;
 }
 
 QTabBar::tab {
-    background-color: #f0f0f0;
-    border: 2px solid #FFA500;
+    background-color: transparent;
+    border: 1px solid transparent;
     border-bottom: none;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
-    padding: 6px 12px;
+    padding: 10px 20px;
     margin-right: 2px;
-	font-size: 12px;
-	font-weight: bold;
-	color: #333;
+    font-size: 13px;
+    font-weight: 500;
+    color: #718096;
 }
 
 QTabBar::tab:selected {
-    background-color: #FFA500;
-    color: white;
-	border-color: #FF8C00;
+    background-color: white;
+    color: #2d3748;
+    border-color: #e2e8f0;
+    border-bottom: 1px solid white;
+    margin-bottom: -1px;
 }
 
 QTabBar::tab:!selected {
@@ -139,56 +148,57 @@ QTabBar::tab:!selected {
 }
 
 QListWidget {
-    border: 2px solid #FFA500;
-    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     background-color: white;
-    alternate-background-color: #f9f9f9;
-	font-size: 12px;
+    alternate-background-color: #f8f9fa;
+    font-size: 13px;
 }
 
 QMenuBar {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #FF8C00, stop: 1 #FFA500);
-    color: white;
-	font-size: 12px;
+    background-color: white;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 13px;
 }
 
 QMenuBar::item {
     background: transparent;
-	padding: 6px 10px;
-	spacing: 3px;
+    padding: 10px 15px;
+    spacing: 3px;
+    color: #4a5568;
 }
 
 QMenuBar::item:selected {
-    background-color: rgba(255, 255, 255, 50);
+    background-color: #f1f5f9;
 }
 
 QMenuBar::item:pressed {
-    background-color: rgba(255, 255, 255, 30);
+    background-color: #e2e8f0;
 }
 
 QMenu {
     background-color: white;
-    border: 2px solid #FF8C00;
-    border-radius: 4px;
-	font-size: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    padding: 5px 0;
 }
 
 QMenu::item {
-    padding: 6px 20px;
-	color: #333;
+    padding: 8px 25px;
+    color: #4a5568;
 }
 
 QMenu::item:selected {
-    background-color: #FFA500;
-    color: white;
+    background-color: #f1f5f9;
 }
 
 QStatusBar {
-    background-color: #f0f0f0;
-    border-top: 1px solid #ddd;
-	font-size: 12px;
-	color: #333;
+    background-color: white;
+    border-top: 1px solid #e2e8f0;
+    font-size: 12px;
+    color: #718096;
+    padding: 5px;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -371,8 +381,8 @@ QStatusBar {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1000</width>
-     <height>26</height>
+     <width>1100</width>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
