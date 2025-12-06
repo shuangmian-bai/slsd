@@ -1,34 +1,14 @@
-from pprint import pprint
-
 import requests
 import urllib.parse
 import re
-from html import unescape
-import time
 import os
 from bs4 import BeautifulSoup
 from docx import Document
-from docx.shared import Inches
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
-from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 headers = {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'Accept-Language': 'zh-CN,zh;q=0.9,ru;q=0.8',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'Pragma': 'no-cache',
-    'Referer': 'https://www.hnslsdxy.com/page/default.aspx',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'same-origin',
-    'Sec-Fetch-User': '?1',
-    'Upgrade-Insecure-Requests': '1',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
-    'sec-ch-ua': '"Chromium";v="142", "Microsoft Edge";v="142", "Not_A Brand";v="99"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Windows"',
 }
 
 # 创建锁对象，用于线程安全地访问文件系统
