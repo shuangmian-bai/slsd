@@ -199,18 +199,18 @@ class MainWindow(QMainWindow):
         """添加单个结果项到列表"""
         if item_type == 'success':
             title = self.truncate_text(item['title'], 80)
-            path = self.truncate_text(item['path'], 100)
-            self.ui.successListWidget.addItem(f"{title}\n{path}")
+            # 只显示标题，添加分隔符
+            self.ui.successListWidget.addItem(f"{title}\n{'─' * 50}")
         elif item_type == 'failed':
             title = self.truncate_text(item['title'], 80)
             error = self.truncate_text(item['error'], 100)
             url = self.truncate_text(item['url'], 100)
-            self.ui.failedListWidget.addItem(f"{title}\n错误: {error}\n链接: {url}")
+            self.ui.failedListWidget.addItem(f"{title}\n错误: {error}\n链接: {url}\n{'─' * 50}")
             
     def add_external_link(self, link):
         """添加外部链接到列表"""
         truncated_link = self.truncate_text(link, 120)
-        self.ui.externalListWidget.addItem(truncated_link)
+        self.ui.externalListWidget.addItem(f"{truncated_link}\n{'─' * 50}")
         
     def populate_results(self, success_list, failed_list, external_links):
         """填充结果列表"""
@@ -221,8 +221,8 @@ class MainWindow(QMainWindow):
         if self.ui.successListWidget.count() == 0:
             for item in success_list:
                 title = self.truncate_text(item['title'], 80)
-                path = self.truncate_text(item['path'], 100)
-                self.ui.successListWidget.addItem(f"{title}\n{path}")
+                # 只显示标题，添加分隔符
+                self.ui.successListWidget.addItem(f"{title}\n{'─' * 50}")
             
         # 填充失败列表（仅在列表为空时）
         if self.ui.failedListWidget.count() == 0:
@@ -230,13 +230,13 @@ class MainWindow(QMainWindow):
                 title = self.truncate_text(item['title'], 80)
                 error = self.truncate_text(item['error'], 100)
                 url = self.truncate_text(item['url'], 100)
-                self.ui.failedListWidget.addItem(f"{title}\n错误: {error}\n链接: {url}")
+                self.ui.failedListWidget.addItem(f"{title}\n错误: {error}\n链接: {url}\n{'─' * 50}")
             
         # 填充外部链接列表（仅在列表为空时）
         if self.ui.externalListWidget.count() == 0:
             for link in external_links:
                 truncated_link = self.truncate_text(link, 120)
-                self.ui.externalListWidget.addItem(truncated_link)
+                self.ui.externalListWidget.addItem(f"{truncated_link}\n{'─' * 50}")
             
     def open_save_folder(self):
         """打开保存目录"""
