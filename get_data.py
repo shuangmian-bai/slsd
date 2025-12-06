@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from docx import Document
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+from urllib.parse import urlparse
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
@@ -24,10 +25,10 @@ img_dir = "img"
 if not os.path.exists(img_dir):
     os.makedirs(img_dir)
 
-# 解析一页新闻
-def parse_page(url):
+# 默认解析器 - 用于解析hnslsdxy.com域名
+def parse_hnslsdxy_page(url):
     req = requests.get(url, headers=headers)
-    soup  = BeautifulSoup(req.text, 'html.parser')
+    soup = BeautifulSoup(req.text, 'html.parser')
 
     # 获取标题 #Labtitle
     title = soup.select('#Labtitle')[0].text
@@ -44,6 +45,12 @@ def parse_page(url):
         'body': body,
         'content_div': content_div
     }
+
+# 解析器字典 - 映射域名到对应的解析函数
+PARSER_FUNCTIONS = {
+    'www.hnslsdxy.com': parse_hnslsdxy_page,
+    'hnslsdxy.com': parse_hnslsdxy_page,
+}
 
 # 将文章保存为Word文档
 def save_to_word(article_data, filename):
@@ -132,7 +139,16 @@ def save_to_word(article_data, filename):
 # 处理单个链接的文章获取和保存
 def process_article(url):
     try:
-        article_data = parse_page(url)
+        # 根据域名选择合适的解析器
+        domain = urlparse(url).netloc
+        parser_func = PARSER_FUNCTIONS.get(domain)
+        
+        # 如果没有对应的解析器，标记为外部链接
+        if not parser_func:
+            return False, None, f"外部链接: {url} (域名 {domain} 未注册解析器)", "外部链接"
+        
+        # 使用对应的解析器解析页面
+        article_data = parser_func(url)
         
         # 根据标题生成文件名，清理非法字符
         filename = re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', article_data['title'])
