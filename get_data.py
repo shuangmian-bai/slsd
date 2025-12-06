@@ -19,12 +19,12 @@ headers = {
 lock = threading.Lock()
 
 # 确保数据目录存在
-data_dir = "data"
+data_dir = os.path.join("data", "word")
 if not os.path.exists(data_dir):
     os.makedirs(data_dir)
 
 # 确保图片缓存目录存在
-img_dir = "img"
+img_dir = os.path.join("data", "img")
 if not os.path.exists(img_dir):
     os.makedirs(img_dir)
 

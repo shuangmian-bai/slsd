@@ -45,11 +45,9 @@ class HnedutvParser(BaseParser if BaseParser else object):
         req = requests.get(url, headers=self.headers)
         soup = BeautifulSoup(req.text, 'html.parser')
 
-        # TODO: 根据实际网站结构调整选择器
         title = soup.select('#main_title')[0].text if soup.select('#main_title') else "未知标题"
         date = soup.select('#main_info')[0].text if soup.select('#main_info') else ""
-        
-        # TODO: 根据实际网站结构调整内容选择器
+
         content_div = soup.select('#content')[0] if soup.select('#content') else soup
         
         # 提取文本内容
@@ -76,4 +74,3 @@ class HnedutvParser(BaseParser if BaseParser else object):
 # 测试代码
 if __name__ == "__main__":
     parser = HnedutvParser()
-    # TODO: 添加测试代码
