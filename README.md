@@ -35,9 +35,19 @@ python ui_main.py
 
 ### 打包为exe
 
-目前项目尚未提供新的打包脚本，后续会添加用于将CLI和GUI版本分别打包为独立exe文件的功能。
+项目现在提供了两个独立的打包脚本，用于将CLI和GUI版本分别打包为exe文件：
 
-打包完成后，可在dist目录找到可执行文件。
+1. 打包图形界面版本（无CMD窗口，多文件版本）:
+```bash
+python build_gui.py
+```
+
+2. 打包命令行版本（有CMD窗口，多文件版本）:
+```bash
+python build_cli.py
+```
+
+打包完成后，可在dist目录找到对应的可执行文件夹。图形界面版本将生成一个包含所有依赖文件的文件夹，运行其中的exe文件即可启动程序。
 
 ## 解析器管理
 
@@ -143,6 +153,8 @@ python manage.py delete_parser news
 │   ├── hnslsdxy_parser.py  # 湖南水利水电职院解析器
 │   └── voc_parser.py    # m.voc.com.cn解析器
 ├── manage.py            # 解析器管理工具
+├── build_gui.py         # GUI版本打包脚本
+├── build_cli.py         # CLI版本打包脚本
 ├── requirements.txt     # 项目依赖
 └── README.md            # 说明文档
 ```

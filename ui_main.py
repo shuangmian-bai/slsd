@@ -25,6 +25,9 @@ class WorkerSignals(QObject):
     """工作线程信号类"""
     progress = pyqtSignal(int, int, str)  # current, total, message
     finished = pyqtSignal(list, list, list)  # success_list, failed_list, external_links
+    # 实时更新结果的信号
+    result_item = pyqtSignal(dict, str)  # item, type (success or failed)
+    external_link = pyqtSignal(str)  # external link
     error = pyqtSignal(str)
 
 
@@ -49,6 +52,10 @@ class SearchWorker(threading.Thread):
             success_list = []
             failed_list = []
             
+            # 实时发送外部链接
+            for link in external_links:
+                self.signals.external_link.emit(link)
+            
             # 使用线程池处理文章
             with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
                 # 提交所有任务
@@ -67,17 +74,29 @@ class SearchWorker(threading.Thread):
                             f"[{processed_count}/{len(data)}] {message}"
                         )
                         
-                        if result:
-                            success_list.append({'title': title, 'url': url, 'path': message.split('已保存为 ')[-1]})
+                        # 检查是否是文件已存在的情况
+                        if result or (not result and "已存在" in message):
+                            # 成功保存或文件已存在都算作成功
+                            path = message.split('已保存为 ')[-1] if '已保存为 ' in message else message.split('已存在')[0]
+                            item = {'title': title, 'url': url, 'path': path}
+                            success_list.append(item)
+                            # 实时发送成功结果
+                            self.signals.result_item.emit(item, 'success')
                         else:
                             # 如果处理失败，记录失败信息
                             if error_msg:  # 只有真正出错的情况才记录
-                                failed_list.append({'title': title, 'url': url, 'error': error_msg})
+                                item = {'title': title, 'url': url, 'error': error_msg}
+                                failed_list.append(item)
+                                # 实时发送失败结果
+                                self.signals.result_item.emit(item, 'failed')
                     except Exception as e:
                         processed_count += 1
                         error_message = f"[{processed_count}/{len(data)}] 处理 {url} 时发生异常: {e}"
                         self.signals.progress.emit(processed_count, len(data), error_message)
-                        failed_list.append({'title': "未知标题", 'url': url, 'error': str(e)})
+                        item = {'title': "未知标题", 'url': url, 'error': str(e)}
+                        failed_list.append(item)
+                        # 实时发送失败结果
+                        self.signals.result_item.emit(item, 'failed')
             
             self.signals.finished.emit(success_list, failed_list, external_links)
             
@@ -97,6 +116,12 @@ class MainWindow(QMainWindow):
         
         # 初始化界面
         self.init_ui()
+        
+    def truncate_text(self, text, max_length=100):
+        """截断过长的文本并添加省略号"""
+        if len(text) > max_length:
+            return text[:max_length-3] + "..."
+        return text
         
     def setup_connections(self):
         """连接信号和槽"""
@@ -136,6 +161,8 @@ class MainWindow(QMainWindow):
         self.worker.signals.progress.connect(self.update_progress)
         self.worker.signals.finished.connect(self.search_finished)
         self.worker.signals.error.connect(self.search_error)
+        self.worker.signals.result_item.connect(self.add_result_item)
+        self.worker.signals.external_link.connect(self.add_external_link)
         self.worker.start()
         
     def update_progress(self, current, total, message):
@@ -168,24 +195,48 @@ class MainWindow(QMainWindow):
         self.ui.statusLabel.setText("搜索出错")
         QMessageBox.critical(self, "错误", f"搜索过程中出现错误:\n{error_msg}")
         
+    def add_result_item(self, item, item_type):
+        """添加单个结果项到列表"""
+        if item_type == 'success':
+            title = self.truncate_text(item['title'], 80)
+            path = self.truncate_text(item['path'], 100)
+            self.ui.successListWidget.addItem(f"{title}\n{path}")
+        elif item_type == 'failed':
+            title = self.truncate_text(item['title'], 80)
+            error = self.truncate_text(item['error'], 100)
+            url = self.truncate_text(item['url'], 100)
+            self.ui.failedListWidget.addItem(f"{title}\n错误: {error}\n链接: {url}")
+            
+    def add_external_link(self, link):
+        """添加外部链接到列表"""
+        truncated_link = self.truncate_text(link, 120)
+        self.ui.externalListWidget.addItem(truncated_link)
+        
     def populate_results(self, success_list, failed_list, external_links):
         """填充结果列表"""
-        # 清空现有内容
-        self.ui.successListWidget.clear()
-        self.ui.failedListWidget.clear()
-        self.ui.externalListWidget.clear()
+        # 注意：这里不清空列表，因为在搜索过程中已经实时添加了结果
+        # 只有在需要重新填充所有结果时才调用此方法
         
-        # 填充成功列表
-        for item in success_list:
-            self.ui.successListWidget.addItem(f"{item['title']}\n{item['path']}")
+        # 填充成功列表（仅在列表为空时）
+        if self.ui.successListWidget.count() == 0:
+            for item in success_list:
+                title = self.truncate_text(item['title'], 80)
+                path = self.truncate_text(item['path'], 100)
+                self.ui.successListWidget.addItem(f"{title}\n{path}")
             
-        # 填充失败列表
-        for item in failed_list:
-            self.ui.failedListWidget.addItem(f"{item['title']}\n错误: {item['error']}\n链接: {item['url']}")
+        # 填充失败列表（仅在列表为空时）
+        if self.ui.failedListWidget.count() == 0:
+            for item in failed_list:
+                title = self.truncate_text(item['title'], 80)
+                error = self.truncate_text(item['error'], 100)
+                url = self.truncate_text(item['url'], 100)
+                self.ui.failedListWidget.addItem(f"{title}\n错误: {error}\n链接: {url}")
             
-        # 填充外部链接列表
-        for link in external_links:
-            self.ui.externalListWidget.addItem(link)
+        # 填充外部链接列表（仅在列表为空时）
+        if self.ui.externalListWidget.count() == 0:
+            for link in external_links:
+                truncated_link = self.truncate_text(link, 120)
+                self.ui.externalListWidget.addItem(truncated_link)
             
     def open_save_folder(self):
         """打开保存目录"""
