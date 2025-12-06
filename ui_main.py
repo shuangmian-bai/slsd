@@ -9,7 +9,7 @@ import sys
 import os
 import threading
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QMessageBox, QFileDialog
+    QApplication, QMainWindow, QMessageBox, QFileDialog, QListWidgetItem
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QObject
 from PyQt6 import uic
@@ -77,11 +77,21 @@ class SearchWorker(threading.Thread):
                         # 检查是否是文件已存在的情况
                         if result or (not result and "已存在" in message):
                             # 成功保存或文件已存在都算作成功
-                            path = message.split('已保存为 ')[-1] if '已保存为 ' in message else message.split('已存在')[0]
-                            item = {'title': title, 'url': url, 'path': path}
-                            success_list.append(item)
-                            # 实时发送成功结果
-                            self.signals.result_item.emit(item, 'success')
+                            if '已保存为 ' in message:
+                                path = message.split('已保存为 ')[-1]
+                            elif '已存在' in message:
+                                # 提取文件路径，去掉前面的"文件 "和后面的"，跳过保存"部分
+                                path = message.replace('文件 ', '').split(' 已存在，跳过保存')[0]
+                            else:
+                                path = ''
+                            
+                            # 转换为绝对路径
+                            if path:
+                                abs_path = os.path.abspath(path)
+                                item = {'title': title, 'url': url, 'path': abs_path}
+                                success_list.append(item)
+                                # 实时发送成功结果
+                                self.signals.result_item.emit(item, 'success')
                         else:
                             # 如果处理失败，记录失败信息
                             if error_msg:  # 只有真正出错的情况才记录
@@ -131,6 +141,11 @@ class MainWindow(QMainWindow):
         self.ui.actionOpenFolder.triggered.connect(self.open_save_folder)
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionAbout.triggered.connect(self.show_about)
+        
+        # 连接列表双击事件
+        self.ui.successListWidget.itemDoubleClicked.connect(self.open_success_item)
+        self.ui.failedListWidget.itemDoubleClicked.connect(self.open_failed_item)
+        self.ui.externalListWidget.itemDoubleClicked.connect(self.open_external_link)
         
     def init_ui(self):
         """初始化界面"""
@@ -200,17 +215,26 @@ class MainWindow(QMainWindow):
         if item_type == 'success':
             title = self.truncate_text(item['title'], 80)
             # 只显示标题，添加分隔符
-            self.ui.successListWidget.addItem(f"{title}\n{'─' * 50}")
+            list_item = QListWidgetItem(f"{title}\n{'─' * 50}")
+            # 保存文件路径到UserRole角色中
+            list_item.setData(Qt.ItemDataRole.UserRole, item['path'])
+            self.ui.successListWidget.addItem(list_item)
         elif item_type == 'failed':
             title = self.truncate_text(item['title'], 80)
             error = self.truncate_text(item['error'], 100)
             url = self.truncate_text(item['url'], 100)
-            self.ui.failedListWidget.addItem(f"{title}\n错误: {error}\n链接: {url}\n{'─' * 50}")
+            list_item = QListWidgetItem(f"{title}\n错误: {error}\n链接: {url}\n{'─' * 50}")
+            # 保存链接到UserRole角色中
+            list_item.setData(Qt.ItemDataRole.UserRole, item['url'])
+            self.ui.failedListWidget.addItem(list_item)
             
     def add_external_link(self, link):
         """添加外部链接到列表"""
         truncated_link = self.truncate_text(link, 120)
-        self.ui.externalListWidget.addItem(f"{truncated_link}\n{'─' * 50}")
+        list_item = QListWidgetItem(f"{truncated_link}\n{'─' * 50}")
+        # 保存链接到UserRole角色中
+        list_item.setData(Qt.ItemDataRole.UserRole, link)
+        self.ui.externalListWidget.addItem(list_item)
         
     def populate_results(self, success_list, failed_list, external_links):
         """填充结果列表"""
@@ -222,7 +246,11 @@ class MainWindow(QMainWindow):
             for item in success_list:
                 title = self.truncate_text(item['title'], 80)
                 # 只显示标题，添加分隔符
-                self.ui.successListWidget.addItem(f"{title}\n{'─' * 50}")
+                list_item = QListWidgetItem(f"{title}\n{'─' * 50}")
+                # 保存文件路径到UserRole角色中（转换为绝对路径）
+                abs_path = os.path.abspath(item['path'])
+                list_item.setData(Qt.ItemDataRole.UserRole, abs_path)
+                self.ui.successListWidget.addItem(list_item)
             
         # 填充失败列表（仅在列表为空时）
         if self.ui.failedListWidget.count() == 0:
@@ -230,13 +258,19 @@ class MainWindow(QMainWindow):
                 title = self.truncate_text(item['title'], 80)
                 error = self.truncate_text(item['error'], 100)
                 url = self.truncate_text(item['url'], 100)
-                self.ui.failedListWidget.addItem(f"{title}\n错误: {error}\n链接: {url}\n{'─' * 50}")
+                list_item = QListWidgetItem(f"{title}\n错误: {error}\n链接: {url}\n{'─' * 50}")
+                # 保存链接到UserRole角色中
+                list_item.setData(Qt.ItemDataRole.UserRole, item['url'])
+                self.ui.failedListWidget.addItem(list_item)
             
         # 填充外部链接列表（仅在列表为空时）
         if self.ui.externalListWidget.count() == 0:
             for link in external_links:
                 truncated_link = self.truncate_text(link, 120)
-                self.ui.externalListWidget.addItem(f"{truncated_link}\n{'─' * 50}")
+                list_item = QListWidgetItem(f"{truncated_link}\n{'─' * 50}")
+                # 保存链接到UserRole角色中
+                list_item.setData(Qt.ItemDataRole.UserRole, link)
+                self.ui.externalListWidget.addItem(list_item)
             
     def open_save_folder(self):
         """打开保存目录"""
@@ -257,6 +291,39 @@ class MainWindow(QMainWindow):
             "版本: 1.0\n"
             "作者: 双面的"
         )
+        
+    def open_success_item(self, item):
+        """打开成功的文件"""
+        # 获取存储在UserRole中的文件路径
+        file_path = item.data(Qt.ItemDataRole.UserRole)
+        if file_path and os.path.exists(file_path):
+            try:
+                # 在Windows上打开文件
+                os.startfile(file_path)
+            except Exception as e:
+                QMessageBox.warning(self, "错误", f"无法打开文件: {file_path}\n错误信息: {str(e)}")
+        elif file_path:
+            QMessageBox.warning(self, "警告", f"文件不存在: {file_path}")
+        else:
+            QMessageBox.warning(self, "警告", "无效的文件路径")
+            
+    def open_failed_item(self, item):
+        """打开失败项的链接"""
+        # 获取存储在UserRole中的链接
+        url = item.data(Qt.ItemDataRole.UserRole)
+        if url:
+            # 使用系统默认浏览器打开链接
+            import webbrowser
+            webbrowser.open(url)
+            
+    def open_external_link(self, item):
+        """打开外部链接"""
+        # 获取存储在UserRole中的链接
+        url = item.data(Qt.ItemDataRole.UserRole)
+        if url:
+            # 使用系统默认浏览器打开链接
+            import webbrowser
+            webbrowser.open(url)
 
 
 def main():
