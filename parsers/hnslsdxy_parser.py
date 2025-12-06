@@ -1,9 +1,28 @@
 import requests
 from bs4 import BeautifulSoup
-from .base_parser import BaseParser
+# 修改导入方式，避免相对导入问题
+import sys
+import os
+
+# 添加当前目录到sys.path，确保可以导入base_parser
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+try:
+    from parsers.base_parser import BaseParser
+except ImportError:
+    # 在PyInstaller打包环境中尝试不同的导入方式
+    try:
+        from base_parser import BaseParser
+    except ImportError:
+        # 最后尝试直接从父模块导入
+        BaseParser = None
+        print("警告: 无法导入BaseParser")
 
 
-class HnslsdxyParser(BaseParser):
+class HnslsdxyParser(BaseParser if BaseParser else object):
     """
     湖南水利水电职业技术学院网站解析器
     """

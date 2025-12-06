@@ -6,6 +6,21 @@ from get_data import get_links, process_article
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
+def safe_input(prompt, default_value=None):
+    """
+    安全的input函数，在打包为exe时可能丢失stdin的情况下提供默认值
+    """
+    try:
+        result = input(prompt).strip()
+        if not result and default_value is not None:
+            return default_value
+        return result
+    except RuntimeError:
+        # 当打包为exe且使用--windowed参数时，stdin可能不可用
+        print(f"{prompt} (由于环境限制，使用默认值)")
+        return default_value if default_value is not None else ""
+
+
 def main():
     # 输出欢迎信息和ASCII艺术字
     print("欢迎使用双面的湖南水利水电官网信息检索工具")
@@ -19,14 +34,12 @@ def main():
     """)
 
     # 获取用户输入的搜索关键词
-    search_key = input("请输入搜索关键词（直接回车默认为'信息安全'）: ").strip()
-    if not search_key:
-        search_key = "信息安全"
+    search_key = safe_input("请输入搜索关键词（直接回车默认为'信息安全'）: ", "信息安全")
 
     # 获取用户输入的线程数
     while True:
         try:
-            thread_input = input("请输入线程数量（直接回车默认为5）: ").strip()
+            thread_input = safe_input("请输入线程数量（直接回车默认为5）: ", "5")
             if not thread_input:
                 max_threads = 5
             else:
@@ -91,7 +104,11 @@ def main():
 
     else:
         print("\n没有发现外部链接")
-    input("回车后继续")
+    
+    try:
+        input("回车后继续")
+    except RuntimeError:
+        pass  # 忽略无法等待输入的情况
 
 
 if __name__ == "__main__":

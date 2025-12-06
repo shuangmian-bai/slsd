@@ -19,7 +19,8 @@ class ParserFactory:
         """
         if getattr(sys, 'frozen', False):
             # 如果是打包后的exe环境
-            bundle_dir = os.path.dirname(sys.executable)
+            # PyInstaller会将数据文件放在sys._MEIPASS目录中
+            bundle_dir = sys._MEIPASS
             parsers_dir = os.path.join(bundle_dir, 'parsers')
         else:
             # 开发环境
@@ -50,7 +51,7 @@ class ParserFactory:
                 try:
                     # 动态导入模块
                     if getattr(sys, 'frozen', False):
-                        # 打包环境
+                        # 打包环境 - 直接从_MEIPASS目录加载
                         spec = importlib.util.spec_from_file_location(
                             module_name, 
                             os.path.join(parsers_dir, filename)
