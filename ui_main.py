@@ -295,7 +295,14 @@ class MainWindow(QMainWindow):
             
     def open_save_folder(self):
         """打开保存目录"""
-        data_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+        if getattr(sys, 'frozen', False):
+            # 打包后的可执行文件
+            app_dir = os.path.dirname(sys.executable)
+        else:
+            # 开发环境
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        data_folder = os.path.join(app_dir, 'data')
         if os.path.exists(data_folder):
             # 在Windows上使用资源管理器打开目录
             os.startfile(data_folder)
