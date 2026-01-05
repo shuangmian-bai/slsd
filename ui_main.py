@@ -158,6 +158,7 @@ class MainWindow(QMainWindow):
         self.ui.actionOpenFolder.triggered.connect(self.open_save_folder)
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionAbout.triggered.connect(self.show_about)
+        self.ui.actionManageParsers.triggered.connect(self.show_parser_management)
         
         # 连接回车键事件到搜索功能
         self.ui.keywordLineEdit.returnPressed.connect(self.start_search)
@@ -352,6 +353,168 @@ class MainWindow(QMainWindow):
             # 使用系统默认浏览器打开链接
             import webbrowser
             webbrowser.open(url)
+    
+    def show_parser_management(self):
+        """显示解析器管理界面"""
+        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QFileDialog, QMessageBox
+        import os
+        import json
+        
+        # 创建对话框
+        dialog = QDialog(self)
+        dialog.setWindowTitle("解析器管理")
+        dialog.setGeometry(200, 200, 500, 400)
+        
+        layout = QVBoxLayout()
+        
+        # 解析器列表
+        self.parser_list = QListWidget()
+        self.refresh_parser_list()
+        layout.addWidget(self.parser_list)
+        
+        # 按钮布局
+        button_layout = QHBoxLayout()
+        
+        btn_refresh = QPushButton("刷新列表")
+        btn_refresh.clicked.connect(self.refresh_parser_list)
+        button_layout.addWidget(btn_refresh)
+        
+        btn_export = QPushButton("导出解析器")
+        btn_export.clicked.connect(self.export_parser)
+        button_layout.addWidget(btn_export)
+        
+        btn_import = QPushButton("导入解析器")
+        btn_import.clicked.connect(self.import_parser)
+        button_layout.addWidget(btn_import)
+        
+        layout.addLayout(button_layout)
+        
+        # 关闭按钮
+        btn_close = QPushButton("关闭")
+        btn_close.clicked.connect(dialog.close)
+        layout.addWidget(btn_close)
+        
+        dialog.setLayout(layout)
+        dialog.exec()
+    
+    def refresh_parser_list(self):
+        """刷新解析器列表"""
+        import os
+        
+        # 获取parsers目录中的所有解析器文件
+        parsers_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'parsers')
+        self.parser_list.clear()
+        
+        for file in os.listdir(parsers_dir):
+            if file.endswith('_parser.py') and file != 'base_parser.py':
+                parser_name = file.replace('_parser.py', '')
+                self.parser_list.addItem(parser_name)
+    
+    def export_parser(self):
+        """导出解析器"""
+        import os
+        import json
+        from PyQt6.QtWidgets import QFileDialog, QMessageBox
+        
+        # 获取当前选中的解析器
+        selected_items = self.parser_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "警告", "请先选择要导出的解析器")
+            return
+        
+        parser_name = selected_items[0].text()
+        
+        # 选择保存位置
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, 
+            "导出解析器", 
+            f"{parser_name}_parser.json", 
+            "JSON Files (*.json)"
+        )
+        
+        if not file_path:
+            return
+        
+        try:
+            # 读取解析器文件内容
+            parser_file_path = os.path.join("parsers", f"{parser_name}_parser.py")
+            if not os.path.exists(parser_file_path):
+                QMessageBox.critical(self, "错误", f"解析器文件不存在: {parser_file_path}")
+                return
+            
+            with open(parser_file_path, 'r', encoding='utf-8') as f:
+                parser_content = f.read()
+            
+            # 创建解析器数据对象
+            parser_data = {
+                "name": parser_name,
+                "content": parser_content,
+                "file_name": f"{parser_name}_parser.py"
+            }
+            
+            # 序列化并保存到文件
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(parser_data, f, ensure_ascii=False, indent=2)
+            
+            QMessageBox.information(self, "成功", f"解析器 {parser_name} 已导出到 {file_path}")
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"导出解析器时出错: {str(e)}")
+    
+    def import_parser(self):
+        """导入解析器"""
+        import os
+        import json
+        from PyQt6.QtWidgets import QFileDialog, QMessageBox
+        
+        # 选择要导入的文件
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, 
+            "导入解析器", 
+            "", 
+            "JSON Files (*.json)"
+        )
+        
+        if not file_path:
+            return
+        
+        try:
+            # 读取序列化的解析器数据
+            with open(file_path, 'r', encoding='utf-8') as f:
+                parser_data = json.load(f)
+            
+            # 获取解析器名称和内容
+            parser_name = parser_data.get("name", "")
+            parser_content = parser_data.get("content", "")
+            file_name = parser_data.get("file_name", "")
+            
+            if not parser_name or not parser_content:
+                QMessageBox.critical(self, "错误", "解析器数据格式不正确")
+                return
+            
+            # 确定目标文件路径
+            target_path = os.path.join("parsers", file_name)
+            
+            # 检查是否已存在同名解析器
+            if os.path.exists(target_path):
+                reply = QMessageBox.question(
+                    self, 
+                    "确认", 
+                    f"解析器 {parser_name} 已存在，是否覆盖？", 
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                if reply == QMessageBox.StandardButton.No:
+                    return
+            
+            # 将解析器内容写入文件
+            with open(target_path, 'w', encoding='utf-8') as f:
+                f.write(parser_content)
+            
+            # 刷新解析器列表
+            self.refresh_parser_list()
+            
+            QMessageBox.information(self, "成功", f"解析器 {parser_name} 已导入")
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"导入解析器时出错: {str(e)}")
 
 
 def main():
