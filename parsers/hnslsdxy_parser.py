@@ -69,4 +69,4 @@ class HnslsdxyParser(BaseParser if BaseParser else object):
         Returns:
             list: 支持的域名列表
         """
-        return ['www.hnslsdxy.com', 'hnslsdxy.com']
+        return ['www.hnslsdxy.com', 'hnslsdxy.com', 'dzk.hnslsdxy.com']

@@ -7,6 +7,7 @@ CLI版本的湖南水利水电信息检索工具主程序
 
 import sys
 import os
+import argparse
 
 # 添加项目根目录到Python路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -120,5 +121,21 @@ def main():
         pass  # 忽略无法等待输入的情况
 
 
+def scan_mode(args):
+    """全站扫描模式"""
+    from scanner import scan_all
+    print(f"启动全站扫描模式，线程数: {args.threads}")
+    scan_all(threads=args.threads)
+
+
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="湖南水利水电信息检索工具")
+    parser.add_argument('--scan', action='store_true', help='启动全站扫描模式')
+    parser.add_argument('--threads', type=int, default=20, help='线程数量（默认20）')
+
+    args = parser.parse_args()
+
+    if args.scan:
+        scan_mode(args)
+    else:
+        main()
