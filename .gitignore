@@ -170,3 +170,5 @@ icon/*
 .Trashes
 ehthumbs.db
 Thumbs.db
+/.venv*/
+
