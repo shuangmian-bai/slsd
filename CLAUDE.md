@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-本文件为 Claude Code (claude.ai/code) 在本仓库中工作时提供指导。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 语言规则
 
@@ -31,8 +31,8 @@ python manage.py list_parsers
 python manage.py create_parser NAME --domains example.com www.example.com
 python manage.py delete_parser NAME
 
-# 打包为可执行文件（PyInstaller）
-python build_gui.py    # GUI exe → dist/（无控制台窗口）
+# 打包为可执行文件（PyInstaller --onefile 模式）
+python build_gui.py    # GUI exe → dist/（无控制台窗口，含 Gui.ui 和 icon/）
 python build_cli.py    # CLI exe → dist/（有控制台窗口）
 ```
 
@@ -55,10 +55,13 @@ python build_cli.py    # CLI exe → dist/（有控制台窗口）
 
 - 多线程爬取主页发现所有 `contentlist.aspx?id=xxx` 列表页
 - 每个列表页自动检测分页（解析 "当前为N/M页"），遍历全部 `&page=N`
-- 多线程并发扫描所有列表页的全部分页，收集 `contentshow.aspx?id=xxx` 文章链接
-- 以文章 ID 为唯一标识，通过 `data/record.json` 记录已处理文章
-- 去重：跳过 record.json 中已存在的 ID + `save_to_word` 文件存在检查兜底
-- 多线程调用 `process_article()` 抓取新文章，增量抓取
+- 多线程并发扫描所有列表页的全部分页，收集两类文章链接：
+  - 内部文章：`contentshow.aspx?id=xxx`
+  - 外部文章：指向其他域名的完整 URL（如媒体聚焦栏目）
+- 内部文章以文章 ID 为唯一标识，外部文章以 URL 为唯一标识，通过 `data/record.json` 记录
+- 去重：跳过 record.json 中已存在的记录 + `save_to_word` 文件存在检查兜底
+- 多线程调用 `process_article()` 抓取新文章（含无解析器的外部文章），增量抓取
+- 扫描结束后输出所有未注册域名汇总及对应的 `create_parser` 命令
 
 ### 解析器插件系统
 
@@ -68,6 +71,7 @@ python build_cli.py    # CLI exe → dist/（有控制台窗口）
 - 类名由文件名推断：`foo_parser.py` → `FooParser`
 - 每个解析器通过 `domains` 属性注册；`ParserFactory.get_parser(url)` 按域名查找
 - 未注册的域名回退为外部链接处理
+- 工厂在模块导入时自动调用 `_load_parsers()` 完成初始化
 
 **解析器契约**（`parsers/base_parser.py`）：
 ```python
@@ -118,7 +122,7 @@ xuexi.cn 是 SPA 动态渲染站点，无法通过常规 HTML 解析获取内容
 
 ### 线程安全
 
-`get_data.py` 使用 `threading.Lock` 保护并发保存文章时的文件系统操作。网络请求使用随机延迟以避免频率限制。
+`get_data.py` 使用 `threading.Lock` 保护并发保存文章时的文件系统操作。`scanner.py` 使用独立的 `record_lock` 保护 `record.json` 的读写。网络请求使用随机延迟以避免频率限制。
 
 ## 运行时数据目录
 

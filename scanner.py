@@ -89,11 +89,14 @@ def discover_list_pages(main_url):
 
 def discover_articles(list_url):
     """
-    爬取单个列表页的所有分页，提取所有 contentshow.aspx?id=xxx 文章链接
+    爬取单个列表页的所有分页，提取所有文章链接
+    - 内部文章: contentshow.aspx?id=xxx
+    - 外部文章: 指向其他域名的文章页面
     分页模式：contentlist.aspx?id=xxx&page=N
-    返回文章 URL 列表
+    返回 (内部文章 URL 列表, 外部文章 URL 列表)
     """
-    article_urls = set()
+    internal_urls = set()
+    external_urls = set()
 
     # 先请求第 1 页，解析总页数
     try:
@@ -102,18 +105,36 @@ def discover_articles(list_url):
         soup = BeautifulSoup(resp.text, 'html.parser')
     except Exception as e:
         print(f"  列表页请求失败: {list_url} - {e}")
-        return []
+        return [], []
 
-    # 解析当前页文章
+    # 已知非文章域名（友情链接等）
+    SKIP_DOMAINS = {
+        'cnki.net', 'www.cnki.net',
+        'slt.hunan.gov.cn',
+        'chsi.com.cn', 'www.chsi.com.cn',
+        'hnedu.cn', 'www.hnedu.cn',
+        'moe.gov.cn', 'www.moe.gov.cn',
+    }
+
     def extract_articles(soup):
-        urls = set()
+        internals = set()
+        externals = set()
         for a in soup.find_all('a', href=True):
             href = a['href']
             if 'contentshow.aspx' in href:
-                urls.add(urljoin(BASE_URL, href))
-        return urls
+                internals.add(urljoin(BASE_URL, href))
+            elif href.startswith('http'):
+                from urllib.parse import urlparse as _urlparse
+                domain = _urlparse(href).netloc
+                # 跳过友情链接和主站自身链接
+                if domain in SKIP_DOMAINS or 'hnslsdxy.com' in domain:
+                    continue
+                externals.add(href)
+        return internals, externals
 
-    article_urls.update(extract_articles(soup))
+    int_part, ext_part = extract_articles(soup)
+    internal_urls.update(int_part)
+    external_urls.update(ext_part)
 
     # 解析总页数：匹配 "当前为N/M页"
     total_pages = 1
@@ -142,43 +163,48 @@ def discover_articles(list_url):
             resp = requests.get(page_url, headers=headers, timeout=30)
             resp.encoding = 'utf-8'
             page_soup = BeautifulSoup(resp.text, 'html.parser')
-            article_urls.update(extract_articles(page_soup))
+            int_part, ext_part = extract_articles(page_soup)
+            internal_urls.update(int_part)
+            external_urls.update(ext_part)
         except Exception as e:
             print(f"  第{page}页请求失败: {page_url} - {e}")
             continue
 
-    return list(article_urls)
+    return list(internal_urls), list(external_urls)
 
 
 def discover_all_articles(main_url, threads=20):
     """
     多线程汇总所有列表页（含分页）的文章链接，去重后返回
+    返回 (内部文章 URL 列表, 外部文章 URL 列表)
     """
     list_pages = discover_list_pages(main_url)
 
-    all_articles = set()
+    all_internal = set()
+    all_external = set()
     lock = threading.Lock()
     counter = [0]
 
     def scan_one_list(list_url):
-        articles = discover_articles(list_url)
+        internals, externals = discover_articles(list_url)
         with lock:
             counter[0] += 1
             idx = counter[0]
-        print(f"  扫描列表页 [{idx}/{len(list_pages)}]: {list_url} -> {len(articles)} 篇")
-        return articles
+        print(f"  扫描列表页 [{idx}/{len(list_pages)}]: {list_url} -> 内部 {len(internals)} 篇, 外部 {len(externals)} 篇")
+        return internals, externals
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         futures = {executor.submit(scan_one_list, url): url for url in list_pages}
         for future in as_completed(futures):
             try:
-                articles = future.result()
-                all_articles.update(articles)
+                internals, externals = future.result()
+                all_internal.update(internals)
+                all_external.update(externals)
             except Exception as e:
                 print(f"  列表页扫描异常: {futures[future]} - {e}")
 
-    print(f"共发现 {len(all_articles)} 篇不重复文章")
-    return list(all_articles)
+    print(f"共发现 {len(all_internal)} 篇内部文章, {len(all_external)} 篇外部文章")
+    return list(all_internal), list(all_external)
 
 
 def _existing_docx_files():
@@ -207,23 +233,31 @@ def scan_all(threads=20, main_url=None):
     print(f"本地已有 {len(processed_ids)} 篇记录, {len(existing_files)} 个已下载文件")
 
     # 2. 多线程发现文章
-    all_urls = discover_all_articles(main_url, threads=threads)
-    if not all_urls:
+    internal_urls, external_urls = discover_all_articles(main_url, threads=threads)
+    if not internal_urls and not external_urls:
         print("未发现任何文章")
         return
 
-    # 3. 过滤已处理（record.json 中的 ID + 已存在的 docx 文件）
+    # 3. 过滤已处理
+    # 内部文章用 article ID 去重
     new_urls = []
-    for url in all_urls:
+    for url in internal_urls:
         article_id = extract_article_id(url)
         if not article_id:
             continue
-        # 跳过已在记录中的
         if article_id in processed_ids:
             continue
         new_urls.append(url)
 
-    print(f"新增 {len(new_urls)} 篇待处理文章（跳过 {len(all_urls) - len(new_urls)} 篇已处理）")
+    # 外部文章用 URL 去重（record 中记录了 url 字段）
+    processed_urls = {v.get('url') for v in record.values() if v.get('url')}
+    for url in external_urls:
+        if url in processed_urls:
+            continue
+        new_urls.append(url)
+
+    total_discovered = len(internal_urls) + len(external_urls)
+    print(f"新增 {len(new_urls)} 篇待处理文章（内部 {len(internal_urls)} + 外部 {len(external_urls)}，跳过 {total_discovered - len(new_urls)} 篇已处理）")
     if not new_urls:
         print("没有新文章需要处理")
         return
@@ -232,6 +266,7 @@ def scan_all(threads=20, main_url=None):
     success_count = 0
     skip_count = 0
     fail_count = 0
+    external_domains = {}  # 域名 -> 文章数
 
     with ThreadPoolExecutor(max_workers=threads) as executor:
         future_map = {executor.submit(process_article, url): url for url in new_urls}
@@ -240,7 +275,10 @@ def scan_all(threads=20, main_url=None):
             url = future_map[future]
             article_id = extract_article_id(url)
             try:
-                result, error_msg, message, title = future.result()
+                result, error_msg, message, title, *rest = future.result()
+                domain = rest[0] if rest else None
+                if domain:
+                    external_domains[domain] = external_domains.get(domain, 0) + 1
                 if result:
                     success_count += 1
                     print(f"  [成功] {title}")
@@ -255,10 +293,17 @@ def scan_all(threads=20, main_url=None):
                 print(f"  [异常] {url} - {e}")
                 title = "未知标题"
 
-            # 更新记录
+            # 更新记录（内部文章用 ID，外部文章用 URL 做 key）
             if article_id:
                 with record_lock:
                     record[article_id] = {
+                        'url': url,
+                        'title': title,
+                        'processed_at': datetime.now().isoformat(),
+                    }
+            else:
+                with record_lock:
+                    record[f"ext:{url}"] = {
                         'url': url,
                         'title': title,
                         'processed_at': datetime.now().isoformat(),
@@ -269,3 +314,14 @@ def scan_all(threads=20, main_url=None):
 
     print(f"\n扫描完成: 成功 {success_count}, 跳过 {skip_count}, 失败 {fail_count}")
     print(f"记录已保存至 {RECORD_PATH}")
+
+    # 6. 输出外部域名汇总
+    if external_domains:
+        total_external = sum(external_domains.values())
+        print(f"\n发现 {len(external_domains)} 个未注册域名（共 {total_external} 篇文章）:")
+        for domain, count in sorted(external_domains.items(), key=lambda x: -x[1]):
+            print(f"  {domain} — {count} 篇")
+        print("\n可使用以下命令添加解析器:")
+        for domain in external_domains:
+            name = domain.split('.')[-2] if domain.count('.') >= 2 else domain.split('.')[0]
+            print(f"  python manage.py create_parser {name} --domains {domain}")

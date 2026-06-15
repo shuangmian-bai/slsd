@@ -70,6 +70,7 @@ def main():
     success_count = 0
     skip_count = 0
     failed_articles = []  # 记录处理失败的文章
+    external_domains = {}  # 域名 -> 文章数
 
     # 使用线程池处理文章
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
@@ -80,7 +81,10 @@ def main():
         for future in as_completed(future_to_url):
             url = future_to_url[future]
             try:
-                result, error_msg, message, title = future.result()
+                result, error_msg, message, title, *rest = future.result()
+                domain = rest[0] if rest else None
+                if domain:
+                    external_domains[domain] = external_domains.get(domain, 0) + 1
                 print(message)
                 if result:
                     success_count += 1
@@ -111,9 +115,19 @@ def main():
         print(f"发现 {len(external_links)} 个外部链接需要手动访问:")
         for i, link in enumerate(external_links, 1):
             print(f"{i}. {link}")
-
     else:
         print("\n没有发现外部链接")
+
+    # 输出搜索过程中遇到的未注册域名
+    if external_domains:
+        total_external = sum(external_domains.values())
+        print(f"\n发现 {len(external_domains)} 个未注册域名（共 {total_external} 篇文章）:")
+        for domain, count in sorted(external_domains.items(), key=lambda x: -x[1]):
+            print(f"  {domain} — {count} 篇")
+        print("\n可使用以下命令添加解析器:")
+        for domain in external_domains:
+            name = domain.split('.')[-2] if domain.count('.') >= 2 else domain.split('.')[0]
+            print(f"  python manage.py create_parser {name} --domains {domain}")
     
     try:
         input("回车后继续")

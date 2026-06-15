@@ -229,29 +229,55 @@ def process_article(url):
     try:
         # 根据URL获取对应的解析器
         parser = ParserFactory.get_parser(url)
-        
-        # 如果没有对应的解析器，标记为外部链接
+
+        # 没有解析器时，尝试通用方式抓取
         if not parser:
             domain = urlparse(url).netloc
-            return False, None, f"外部链接: {url} (域名 {domain} 未注册解析器)", "外部链接"
-        
+            try:
+                resp = requests.get(url, headers=headers, timeout=30)
+                resp.encoding = 'utf-8'
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                title = soup.title.string.strip() if soup.title and soup.title.string else "未知标题"
+                # 尝试常见的正文容器
+                content_div = (
+                    soup.find('article')
+                    or soup.find('div', class_=re.compile(r'content|article|body|main'))
+                    or soup.find('body')
+                )
+                body = content_div.get_text(strip=True) if content_div else ""
+                article_data = {
+                    'title': title,
+                    'date': '',
+                    'body': body,
+                    'content_div': content_div or soup,
+                }
+                filename = re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', title) + ".docx"
+                with lock:
+                    saved, full_path = save_to_word(article_data, filename, source_url=url)
+                if saved:
+                    return True, None, f"[外部] 文章 '{title}' 已保存为 {full_path}", title, domain
+                else:
+                    return False, None, f"[外部] 文件 {full_path} 已存在，跳过", title, domain
+            except Exception as e:
+                return False, str(e), f"[外部] 处理 {url} 时出错: {e}", "未知标题", domain
+
         # 使用对应的解析器解析页面
         article_data = parser.parse(url)
-        
+
         # 根据标题生成文件名，清理非法字符
         filename = re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', article_data['title'])
         filename = f"{filename}.docx"
-        
+
         # 保存为Word文档
         with lock:
             saved, full_path = save_to_word(article_data, filename, source_url=url)
-            
+
         if saved:
-            return True, None, f"文章 '{article_data['title']}' 已保存为 {full_path}", article_data['title']
+            return True, None, f"文章 '{article_data['title']}' 已保存为 {full_path}", article_data['title'], None
         else:
-            return False, None, f"文件 {full_path} 已存在，跳过保存", article_data['title']
+            return False, None, f"文件 {full_path} 已存在，跳过保存", article_data['title'], None
     except Exception as e:
-        return False, str(e), f"处理 {url} 时出错: {e}", "未知标题"
+        return False, str(e), f"处理 {url} 时出错: {e}", "未知标题", None
 
 def get_links(search_key):
     # 对搜索关键词进行URL编码
